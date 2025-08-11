@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      family_members: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          date_of_death: string | null
+          gender: string | null
+          id: string
+          name: string
+          notes: string | null
+          photo_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          date_of_death?: string | null
+          gender?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          date_of_death?: string | null
+          gender?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      family_relationships: {
+        Row: {
+          created_at: string
+          id: string
+          person1_id: string
+          person2_id: string
+          relationship_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person1_id: string
+          person2_id: string
+          relationship_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person1_id?: string
+          person2_id?: string
+          relationship_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_relationships_person1_id_fkey"
+            columns: ["person1_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_relationships_person2_id_fkey"
+            columns: ["person2_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

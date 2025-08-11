@@ -2,39 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Family Tree Design System - Warm, nature-inspired colors with sage greens and earth tones */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core background and text */
+    --background: 45 15% 97%;
+    --foreground: 120 8% 15%;
 
+    /* Card components */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 120 8% 15%;
 
+    /* Popover components */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 120 8% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary sage green theme */
+    --primary: 120 25% 35%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 120 20% 45%;
+    --primary-lighter: 120 15% 85%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary earth tones */
+    --secondary: 35 20% 90%;
+    --secondary-foreground: 120 8% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted tones */
+    --muted: 45 10% 95%;
+    --muted-foreground: 120 5% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent warm brown */
+    --accent: 25 25% 85%;
+    --accent-foreground: 120 8% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive warm red */
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders and inputs */
+    --border: 120 10% 88%;
+    --input: 120 10% 88%;
+    --ring: 120 25% 35%;
+
+    /* Tree-specific colors */
+    --tree-node: 120 20% 95%;
+    --tree-node-male: 200 25% 92%;
+    --tree-node-female: 320 25% 92%;
+    --tree-connection: 120 15% 65%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(120 25% 35%), hsl(120 20% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(45 15% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(120 25% 35%), hsl(90 20% 40%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(120 10% 20% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(120 10% 20% / 0.12);
+    --shadow-strong: 0 8px 32px hsl(120 10% 20% / 0.16);
+    
+    /* Animation transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --radius: 0.5rem;
 
