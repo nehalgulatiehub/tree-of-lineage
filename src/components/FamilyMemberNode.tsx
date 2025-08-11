@@ -3,7 +3,14 @@ import { Handle, Position } from "@xyflow/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar } from "lucide-react";
+import { User, Calendar, Edit, Trash2, MoreVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FamilyMemberData {
   id: string;
@@ -17,9 +24,11 @@ interface FamilyMemberData {
 
 interface FamilyMemberNodeProps {
   data: FamilyMemberData;
+  onEdit?: (member: FamilyMemberData) => void;
+  onDelete?: (memberId: string) => void;
 }
 
-const FamilyMemberNode = memo(({ data }: FamilyMemberNodeProps) => {
+const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps) => {
   const getGenderColor = (gender?: string) => {
     switch (gender) {
       case "male":
@@ -57,8 +66,32 @@ const FamilyMemberNode = memo(({ data }: FamilyMemberNodeProps) => {
         className="!bg-tree-connection !border-tree-connection"
       />
       
-      <Card className={`min-w-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)}`}>
+      <Card className={`min-w-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
         <CardContent className="p-4 text-center space-y-3">
+          {/* Action Menu */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit?.(data)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDelete?.(data.id)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <div className="flex justify-center">
             <Avatar className="h-16 w-16 border-2 border-background shadow-soft">
               <AvatarImage src={data.photo_url} alt={data.name} />
@@ -106,6 +139,20 @@ const FamilyMemberNode = memo(({ data }: FamilyMemberNodeProps) => {
         type="source" 
         position={Position.Bottom} 
         className="!bg-tree-connection !border-tree-connection"
+      />
+      
+      {/* Side handles for spouse connections */}
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="!bg-tree-connection !border-tree-connection"
+        id="spouse-left"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="!bg-tree-connection !border-tree-connection"
+        id="spouse-right"
       />
     </div>
   );
