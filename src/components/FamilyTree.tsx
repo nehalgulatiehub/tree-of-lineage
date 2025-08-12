@@ -55,10 +55,6 @@ interface FamilyRelationship {
   created_at: string;
 }
 
-const nodeTypes = {
-  familyMember: FamilyMemberNode,
-};
-
 const FamilyTree = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -226,11 +222,7 @@ const FamilyTree = () => {
           id: member.id,
           type: "familyMember",
           position: { x: currentX, y: yPosition },
-          data: { 
-            ...member,
-            onEdit: handleEditMember,
-            onDelete: handleDeleteMember
-          },
+          data: member as any,
         });
         processedMembers.add(member.id);
 
@@ -244,11 +236,7 @@ const FamilyTree = () => {
               id: spouse.id,
               type: "familyMember",
               position: { x: currentX + 250, y: yPosition },
-              data: { 
-                ...spouse,
-                onEdit: handleEditMember,
-                onDelete: handleDeleteMember
-              },
+              data: spouse as any,
             });
             processedMembers.add(spouse.id);
           }
@@ -297,11 +285,7 @@ const FamilyTree = () => {
             x: (index % 3) * nodeSpacing + 100, 
             y: currentY + levelSpacing * 2
           },
-          data: { 
-            ...member,
-            onEdit: handleEditMember,
-            onDelete: handleDeleteMember
-          },
+          data: member as any,
         });
       }
     });
@@ -364,6 +348,16 @@ const FamilyTree = () => {
   const handleMemberUpdated = () => {
     console.log("Member updated, refreshing data...");
     fetchFamilyData();
+  };
+
+  const nodeTypes = {
+    familyMember: (props: any) => (
+      <FamilyMemberNode 
+        {...props} 
+        onEdit={handleEditMember}
+        onDelete={handleDeleteMember}
+      />
+    ),
   };
 
   return (
