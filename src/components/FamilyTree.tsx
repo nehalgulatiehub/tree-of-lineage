@@ -104,6 +104,53 @@ const FamilyTree = () => {
     }
   };
 
+  const handleEditMember = (member: FamilyMember) => {
+    setSelectedMember(member);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteMember = (memberId: string) => {
+    setMemberToDelete(memberId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete) return;
+    
+    try {
+      // Delete relationships first
+      await supabase
+        .from("family_relationships")
+        .delete()
+        .or(`person1_id.eq.${memberToDelete},person2_id.eq.${memberToDelete}`);
+      
+      // Delete the member
+      const { error } = await supabase
+        .from("family_members")
+        .delete()
+        .eq("id", memberToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Family member deleted successfully",
+      });
+
+      fetchFamilyData();
+    } catch (error) {
+      console.error("Error deleting family member:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete family member",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setMemberToDelete(null);
+    }
+  };
+
   // Enhanced layout algorithm for family tree structure
   const createNodesAndEdges = useCallback(() => {
     if (familyMembers.length === 0) return;
@@ -259,7 +306,7 @@ const FamilyTree = () => {
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [familyMembers, relationships, setNodes, setEdges]);
+  }, [familyMembers, relationships, setNodes, setEdges, handleEditMember, handleDeleteMember]);
 
   useEffect(() => {
     fetchFamilyData();
@@ -274,52 +321,6 @@ const FamilyTree = () => {
     setIsAddDialogOpen(false);
   };
 
-  const handleEditMember = (member: FamilyMember) => {
-    setSelectedMember(member);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleDeleteMember = (memberId: string) => {
-    setMemberToDelete(memberId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteMember = async () => {
-    if (!memberToDelete) return;
-    
-    try {
-      // Delete relationships first
-      await supabase
-        .from("family_relationships")
-        .delete()
-        .or(`person1_id.eq.${memberToDelete},person2_id.eq.${memberToDelete}`);
-      
-      // Delete the member
-      const { error } = await supabase
-        .from("family_members")
-        .delete()
-        .eq("id", memberToDelete);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Family member deleted successfully",
-      });
-
-      fetchFamilyData();
-    } catch (error) {
-      console.error("Error deleting family member:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete family member",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setMemberToDelete(null);
-    }
-  };
 
   return (
     <div className="h-screen w-full relative">
@@ -386,6 +387,7 @@ const FamilyTree = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 };
