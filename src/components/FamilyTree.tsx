@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow,
@@ -76,6 +77,7 @@ const FamilyTree = () => {
   );
 
   const fetchFamilyData = async () => {
+    console.log("Fetching family data...");
     try {
       // Fetch family members
       const { data: members, error: membersError } = await supabase
@@ -91,6 +93,9 @@ const FamilyTree = () => {
         .select("*");
 
       if (relationsError) throw relationsError;
+
+      console.log("Fetched members:", members);
+      console.log("Fetched relationships:", relations);
 
       setFamilyMembers(members || []);
       setRelationships(relations || []);
@@ -151,18 +156,26 @@ const FamilyTree = () => {
     }
   };
 
-  // Enhanced layout algorithm for family tree structure
+  // Simplified layout algorithm that ensures all members are displayed
   const createNodesAndEdges = useCallback(() => {
-    if (familyMembers.length === 0) return;
+    console.log("Creating nodes and edges...");
+    console.log("Family members:", familyMembers);
+    console.log("Relationships:", relationships);
 
-    // Build family structure
-    const memberMap = new Map(familyMembers.map(m => [m.id, m]));
+    if (familyMembers.length === 0) {
+      console.log("No family members found");
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
+
+    // Build relationship maps for easier lookup
     const spouseMap = new Map<string, string>();
     const parentChildMap = new Map<string, string[]>();
     const childParentMap = new Map<string, string>();
-    
-    // Process relationships
+
     relationships.forEach(rel => {
+      console.log("Processing relationship:", rel);
       if (rel.relationship_type === 'spouse') {
         spouseMap.set(rel.person1_id, rel.person2_id);
         spouseMap.set(rel.person2_id, rel.person1_id);
@@ -181,132 +194,158 @@ const FamilyTree = () => {
       }
     });
 
-    // Find root members (those without parents)
-    const rootMembers = familyMembers.filter(m => !childParentMap.has(m.id));
-    
+    console.log("Spouse map:", spouseMap);
+    console.log("Parent-child map:", parentChildMap);
+    console.log("Child-parent map:", childParentMap);
+
     const newNodes: Node[] = [];
     const processedMembers = new Set<string>();
+
+    // Find root members (those without parents)
+    const rootMembers = familyMembers.filter(m => !childParentMap.has(m.id));
+    console.log("Root members:", rootMembers);
+
+    // If no root members found, treat the first member as root
+    const startingMembers = rootMembers.length > 0 ? rootMembers : [familyMembers[0]];
+
     let currentY = 100;
-    
-    // Layout generation levels
-    const layoutGeneration = (members: FamilyMember[], y: number) => {
+    const nodeSpacing = 350;
+    const levelSpacing = 250;
+
+    // Process members level by level
+    const processLevel = (members: FamilyMember[], yPosition: number) => {
       let currentX = 100;
-      const generationMembers: string[] = [];
-      
+      const nextLevelMembers: FamilyMember[] = [];
+
       members.forEach(member => {
         if (processedMembers.has(member.id)) return;
-        
-        // Add main member
+
+        // Add the main member
+        console.log("Adding node for member:", member.name);
         newNodes.push({
           id: member.id,
           type: "familyMember",
-          position: { x: currentX, y },
+          position: { x: currentX, y: yPosition },
           data: { 
             ...member,
             onEdit: handleEditMember,
             onDelete: handleDeleteMember
-          } as unknown as Record<string, unknown>,
+          },
         });
         processedMembers.add(member.id);
-        generationMembers.push(member.id);
-        
-        // Add spouse alongside
+
+        // Check for spouse
         const spouseId = spouseMap.get(member.id);
         if (spouseId && !processedMembers.has(spouseId)) {
-          const spouse = memberMap.get(spouseId);
+          const spouse = familyMembers.find(m => m.id === spouseId);
           if (spouse) {
+            console.log("Adding spouse node for:", spouse.name);
             newNodes.push({
               id: spouse.id,
               type: "familyMember",
-              position: { x: currentX + 250, y },
+              position: { x: currentX + 250, y: yPosition },
               data: { 
                 ...spouse,
                 onEdit: handleEditMember,
                 onDelete: handleDeleteMember
-              } as unknown as Record<string, unknown>,
+              },
             });
             processedMembers.add(spouse.id);
-            generationMembers.push(spouse.id);
           }
         }
-        
-        currentX += spouseId ? 600 : 350;
-      });
-      
-      // Process children of this generation
-      const nextGeneration: FamilyMember[] = [];
-      generationMembers.forEach(memberId => {
-        const children = parentChildMap.get(memberId) || [];
+
+        // Find children of this member
+        const children = parentChildMap.get(member.id) || [];
         children.forEach(childId => {
-          const child = memberMap.get(childId);
+          const child = familyMembers.find(m => m.id === childId);
           if (child && !processedMembers.has(childId)) {
-            nextGeneration.push(child);
+            nextLevelMembers.push(child);
           }
         });
-      });
-      
-      if (nextGeneration.length > 0) {
-        layoutGeneration(nextGeneration, y + 250);
-      }
-    };
-    
-    // Start with root members
-    if (rootMembers.length > 0) {
-      layoutGeneration(rootMembers, currentY);
-    } else if (familyMembers.length > 0) {
-      // Fallback: simple grid layout
-      familyMembers.forEach((member, index) => {
-        if (!processedMembers.has(member.id)) {
-          newNodes.push({
-            id: member.id,
-            type: "familyMember",
-            position: { 
-              x: (index % 3) * 350 + 100, 
-              y: Math.floor(index / 3) * 250 + 100 
-            },
-            data: { 
-              ...member,
-              onEdit: handleEditMember,
-              onDelete: handleDeleteMember
-            } as unknown as Record<string, unknown>,
+
+        // Also check if spouse has children
+        if (spouseId) {
+          const spouseChildren = parentChildMap.get(spouseId) || [];
+          spouseChildren.forEach(childId => {
+            const child = familyMembers.find(m => m.id === childId);
+            if (child && !processedMembers.has(childId) && !nextLevelMembers.includes(child)) {
+              nextLevelMembers.push(child);
+            }
           });
         }
-      });
-    }
 
-    // Create edges with improved styling
-    const newEdges: Edge[] = relationships.map((rel) => {
-      const edgeStyle = {
-        stroke: "hsl(var(--tree-connection))",
-        strokeWidth: 2,
+        currentX += spouseId ? 600 : nodeSpacing;
+      });
+
+      // Process next level if there are children
+      if (nextLevelMembers.length > 0) {
+        processLevel(nextLevelMembers, yPosition + levelSpacing);
+      }
+    };
+
+    // Start processing from root members
+    processLevel(startingMembers, currentY);
+
+    // Add any remaining members that weren't processed (orphaned members)
+    familyMembers.forEach((member, index) => {
+      if (!processedMembers.has(member.id)) {
+        console.log("Adding orphaned member:", member.name);
+        newNodes.push({
+          id: member.id,
+          type: "familyMember",
+          position: { 
+            x: (index % 3) * nodeSpacing + 100, 
+            y: currentY + levelSpacing * 2
+          },
+          data: { 
+            ...member,
+            onEdit: handleEditMember,
+            onDelete: handleDeleteMember
+          },
+        });
+      }
+    });
+
+    // Create edges for relationships
+    const newEdges: Edge[] = relationships.map((rel, index) => {
+      const baseEdge = {
+        id: rel.id || `edge-${index}`,
+        style: {
+          stroke: "hsl(var(--tree-connection))",
+          strokeWidth: 2,
+        },
       };
-      
+
       if (rel.relationship_type === 'spouse') {
         return {
-          id: rel.id,
+          ...baseEdge,
           source: rel.person1_id,
           target: rel.person2_id,
-          sourceHandle: "spouse-right",
-          targetHandle: "spouse-left",
           type: "straight",
           label: "Spouse",
-          style: { ...edgeStyle, stroke: "hsl(var(--primary))" },
+          style: { 
+            ...baseEdge.style, 
+            stroke: "hsl(var(--primary))" 
+          },
         };
       }
-      
+
+      // Parent-child relationships
       return {
-        id: rel.id,
+        ...baseEdge,
         source: rel.relationship_type === 'parent' ? rel.person1_id : rel.person2_id,
         target: rel.relationship_type === 'parent' ? rel.person2_id : rel.person1_id,
         type: "smoothstep",
-        label: rel.relationship_type === 'parent' || rel.relationship_type === 'child' ? 'Child' : rel.relationship_type,
-        style: edgeStyle,
+        label: "Child",
       };
     });
 
+    console.log("Created nodes:", newNodes);
+    console.log("Created edges:", newEdges);
+
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [familyMembers, relationships, setNodes, setEdges, handleEditMember, handleDeleteMember]);
+  }, [familyMembers, relationships, handleEditMember, handleDeleteMember]);
 
   useEffect(() => {
     fetchFamilyData();
@@ -317,10 +356,15 @@ const FamilyTree = () => {
   }, [createNodesAndEdges]);
 
   const handleMemberAdded = () => {
+    console.log("Member added, refreshing data...");
     fetchFamilyData();
     setIsAddDialogOpen(false);
   };
 
+  const handleMemberUpdated = () => {
+    console.log("Member updated, refreshing data...");
+    fetchFamilyData();
+  };
 
   return (
     <div className="h-screen w-full relative">
@@ -365,7 +409,7 @@ const FamilyTree = () => {
           setIsEditDialogOpen(false);
           setSelectedMember(null);
         }}
-        onMemberUpdated={fetchFamilyData}
+        onMemberUpdated={handleMemberUpdated}
         member={selectedMember}
       />
 
@@ -387,7 +431,6 @@ const FamilyTree = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 };
