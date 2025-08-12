@@ -78,7 +78,10 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         .select()
         .single();
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Member insert error:", memberError);
+        throw memberError;
+      }
 
       // Add relationship if specified
       if (formData.relatedTo && formData.relationshipType && member) {
@@ -97,6 +100,8 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         }
       }
 
+      console.log("Member added successfully:", member);
+      
       toast({
         title: "Success!",
         description: "Family member added successfully",
@@ -117,6 +122,7 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
       onMemberAdded();
     } catch (error) {
       console.error("Error adding family member:", error);
+      console.log("Full error details:", error);
       toast({
         title: "Error",
         description: "Failed to add family member",
