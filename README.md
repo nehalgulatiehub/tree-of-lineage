@@ -1,73 +1,143 @@
-# Welcome to your Lovable project
+🌳 Family Tree Builder
+A comprehensive web-based family tree application that allows users to create, manage, and visualize their family genealogy with an intuitive interface and robust relationship mapping.
+✨ Features
+🔐 Authentication System
 
-## Project info
+User Registration & Login: Secure signup/signin with email and password
+Session Management: Persistent login sessions with logout functionality
+User-Specific Trees: Each user maintains their own private family tree
 
-**URL**: https://lovable.dev/projects/3f553ff5-95ca-4692-9fa6-81109099b9f4
+👥 Family Member Management
 
-## How can I edit this code?
+Comprehensive Member Profiles:
 
-There are several ways of editing your application.
+Name, birth date, death date (optional)
+Photo upload with preview
+Gender selection
+Additional notes field
 
-**Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3f553ff5-95ca-4692-9fa6-81109099b9f4) and start prompting.
+Advanced Relationship Mapping:
 
-Changes made via Lovable will be committed automatically to this repo.
+Relationship types: Spouse, Parent, Child, Sibling, Grandparent, Grandchild, Uncle/Aunt, Cousin
+Dynamic relationship dropdown based on existing family members
+Intelligent relationship suggestions
 
-**Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Easy Editing: Click to edit any family member's information
+Bulk Operations: Add multiple family members in sequence
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🎨 Interactive Family Tree Visualization
 
-Follow these steps:
+Hierarchical Layout: Generations displayed from top (oldest) to bottom (youngest)
+Visual Connections: Clear lines showing family relationships
+Color-Coded Design: Different colors for generations and relationship types
+Responsive Design: Works seamlessly on desktop, tablet, and mobile devices
+Zoom & Pan: Navigate large family trees with ease
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+🔍 Advanced Functionality
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Smart Search: Find family members quickly by name
+Relationship Path Finder: Discover connections between any two family members
+Family Statistics: View total members, generations, and family insights
+Export Options: Save tree as image or PDF
+Print Support: Print-friendly family tree layouts
 
-# Step 3: Install the necessary dependencies.
-npm i
+🚀 Getting Started
+Prerequisites
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+Modern web browser (Chrome, Firefox, Safari, Edge)
+No additional software installation required
 
-**Edit a file directly in GitHub**
+Installation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Clone the repository:
+bashgit clone https://github.com/nehalgulatiehub/tree-of-lineage.git
 
-**Use GitHub Codespaces**
+Navigate to project directory:
+bashcd tree-of-lineage
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Open in browser:
+bash# Simply open the HTML file in your preferred browser
+open index.html
+# or
+double-click index.html
 
-## What technologies are used for this project?
 
-This project is built with:
+Quick Start
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Sign Up: Create your account with email and password
+Add Root Member: Start with yourself or the oldest known family member
+Build Your Tree: Add family members and define their relationships
+Explore: Use zoom, search, and visualization features to navigate your tree
 
-## How can I deploy this project?
+💻 Usage
+Adding Family Members
 
-Simply open [Lovable](https://lovable.dev/projects/3f553ff5-95ca-4692-9fa6-81109099b9f4) and click on Share -> Publish.
+Click the "Add Family Member" button
+Fill in the member details:
 
-## Can I connect a custom domain to my Lovable project?
+Name (required)
+Birth Date
+Death Date (optional - check box to enable)
+Gender
+Photo (upload image file)
+Relationship Type (select from dropdown)
+Related To (select existing family member)
+Additional Notes (optional)
 
-Yes, you can!
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Click "Add Member" to save
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Managing Relationships
+
+Spouse: Creates horizontal connection between partners
+Parent/Child: Creates vertical generational connections
+Sibling: Groups members in the same generation
+Extended Family: Connects aunts, uncles, cousins, and grandparents
+
+Navigation
+
+Zoom: Use mouse wheel or zoom controls
+Pan: Click and drag to move around large trees
+Search: Use the search bar to locate specific family members
+Edit: Click on any family member card to edit their information
+
+
+Browser Compatibility
+
+✅ Chrome 60+
+✅ Firefox 55+
+✅ Safari 12+
+✅ Edge 79+
+✅ Mobile browsers (iOS Safari, Chrome Mobile)
+
+📱 Responsive Design
+The application is fully responsive and optimized for:
+
+Desktop: Full feature set with optimal viewing experience
+Tablet: Touch-friendly interface with adapted controls
+Mobile: Streamlined UI with essential features accessible
+
+🔒 Privacy & Data
+
+Local Storage: All family data is stored locally in your browser
+No Server: No data is transmitted to external servers
+Private: Your family information remains completely private
+Portable: Export your data anytime in multiple formats
+
+🤝 Contributing
+We welcome contributions! Here's how you can help:
+
+Fork the repository
+Create a feature branch: git checkout -b feature/amazing-feature
+Commit your changes: git commit -m 'Add amazing feature'
+Push to branch: git push origin feature/amazing-feature
+Open a Pull Request
+
+Contribution Guidelines
+
+Follow existing code style and structure
+Add comments for complex functionality
+Test on multiple browsers before submitting
+Update documentation for new features
