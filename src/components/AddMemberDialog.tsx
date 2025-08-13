@@ -85,18 +85,47 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
 
       // Add relationship if specified
       if (formData.relatedTo && formData.relationshipType && member) {
+        let person1_id = formData.relatedTo;
+        let person2_id = member.id;
+        let relationship_type = formData.relationshipType;
+
+        // Handle different relationship types properly
+        if (formData.relationshipType === "child") {
+          // New member is a child of the selected person
+          person1_id = formData.relatedTo; // parent
+          person2_id = member.id; // child
+          relationship_type = "parent"; // parent relationship from parent to child
+        } else if (formData.relationshipType === "parent") {
+          // New member is a parent of the selected person
+          person1_id = member.id; // parent (new member)
+          person2_id = formData.relatedTo; // child (existing member)
+          relationship_type = "parent"; // parent relationship from new member to existing
+        } else if (formData.relationshipType === "spouse") {
+          // Spouse relationship is bidirectional
+          person1_id = formData.relatedTo;
+          person2_id = member.id;
+          relationship_type = "spouse";
+        } else if (formData.relationshipType === "sibling") {
+          // Sibling relationship - we'll store as sibling type
+          person1_id = formData.relatedTo;
+          person2_id = member.id;
+          relationship_type = "sibling";
+        }
+
         const { error: relationError } = await supabase
           .from("family_relationships")
           .insert({
             user_id: user.id,
-            person1_id: formData.relatedTo,
-            person2_id: member.id,
-            relationship_type: formData.relationshipType,
+            person1_id,
+            person2_id,
+            relationship_type,
           });
 
         if (relationError) {
           console.error("Error creating relationship:", relationError);
           // Don't throw here, member was created successfully
+        } else {
+          console.log(`Created ${relationship_type} relationship between ${person1_id} and ${person2_id}`);
         }
       }
 
@@ -203,41 +232,74 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
           </div>
 
           {existingMembers.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="relatedTo">Related to (Optional)</Label>
-                <Select value={formData.relatedTo} onValueChange={(value) => setFormData({ ...formData, relatedTo: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select family member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {existingMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold mb-4">Relationship (Optional)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="relatedTo">Select Existing Family Member</Label>
+                  <Select value={formData.relatedTo} onValueChange={(value) => setFormData({ ...formData, relatedTo: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a family member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {existingMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name} {member.gender && `(${member.gender})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="relationshipType">Relationship Type</Label>
-                <Select 
-                  value={formData.relationshipType} 
-                  onValueChange={(value) => setFormData({ ...formData, relationshipType: value })}
-                  disabled={!formData.relatedTo}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select relationship" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="child">Child</SelectItem>
-                    <SelectItem value="spouse">Spouse</SelectItem>
-                    <SelectItem value="sibling">Sibling</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="relationshipType">How is this person related?</Label>
+                  <Select 
+                    value={formData.relationshipType} 
+                    onValueChange={(value) => setFormData({ ...formData, relationshipType: value })}
+                    disabled={!formData.relatedTo}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="parent">
+                        <div className="flex flex-col">
+                          <span>Parent</span>
+                          <span className="text-xs text-muted-foreground">This person is a parent of the selected member</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="child">
+                        <div className="flex flex-col">
+                          <span>Child</span>
+                          <span className="text-xs text-muted-foreground">This person is a child of the selected member</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="spouse">
+                        <div className="flex flex-col">
+                          <span>Spouse</span>
+                          <span className="text-xs text-muted-foreground">This person is married to the selected member</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="sibling">
+                        <div className="flex flex-col">
+                          <span>Sibling</span>
+                          <span className="text-xs text-muted-foreground">This person is a sibling of the selected member</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
+              {formData.relatedTo && formData.relationshipType && (
+                <div className="mt-3 p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{formData.name || "New member"}</strong> will be added as a{" "}
+                    <strong>{formData.relationshipType}</strong> of{" "}
+                    <strong>{existingMembers.find(m => m.id === formData.relatedTo)?.name}</strong>
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

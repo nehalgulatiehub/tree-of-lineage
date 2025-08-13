@@ -164,6 +164,7 @@ const FamilyTree = () => {
     const spouseMap = new Map<string, string>();
     const parentChildMap = new Map<string, string[]>();
     const childParentMap = new Map<string, string>();
+    const siblingMap = new Map<string, string[]>();
 
     relationships.forEach(rel => {
       if (rel.relationship_type === 'spouse') {
@@ -181,6 +182,16 @@ const FamilyTree = () => {
         }
         parentChildMap.get(rel.person2_id)!.push(rel.person1_id);
         childParentMap.set(rel.person1_id, rel.person2_id);
+      } else if (rel.relationship_type === 'sibling') {
+        // Add sibling relationships bidirectionally
+        if (!siblingMap.has(rel.person1_id)) {
+          siblingMap.set(rel.person1_id, []);
+        }
+        if (!siblingMap.has(rel.person2_id)) {
+          siblingMap.set(rel.person2_id, []);
+        }
+        siblingMap.get(rel.person1_id)!.push(rel.person2_id);
+        siblingMap.get(rel.person2_id)!.push(rel.person1_id);
       }
     });
 
@@ -319,6 +330,20 @@ const FamilyTree = () => {
             stroke: "hsl(var(--tree-connection))",
             strokeWidth: 2,
           },
+          animated: false,
+        });
+      } else if (rel.relationship_type === 'sibling') {
+        newEdges.push({
+          id: `sibling-${rel.person1_id}-${rel.person2_id}`,
+          source: rel.person1_id,
+          target: rel.person2_id,
+          type: "straight",
+          style: {
+            stroke: "hsl(var(--secondary))",
+            strokeWidth: 2,
+            strokeDasharray: "5,5",
+          },
+          label: "Sibling",
           animated: false,
         });
       }
