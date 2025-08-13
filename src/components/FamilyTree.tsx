@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ReactFlow,
   Node,
@@ -152,14 +152,9 @@ const FamilyTree = () => {
     }
   };
 
-  // Simplified layout algorithm that ensures all members are displayed
+  // Enhanced hierarchical tree layout algorithm
   const createNodesAndEdges = useCallback(() => {
-    console.log("Creating nodes and edges...");
-    console.log("Family members:", familyMembers);
-    console.log("Relationships:", relationships);
-
     if (familyMembers.length === 0) {
-      console.log("No family members found");
       setNodes([]);
       setEdges([]);
       return;
@@ -171,7 +166,6 @@ const FamilyTree = () => {
     const childParentMap = new Map<string, string>();
 
     relationships.forEach(rel => {
-      console.log("Processing relationship:", rel);
       if (rel.relationship_type === 'spouse') {
         spouseMap.set(rel.person1_id, rel.person2_id);
         spouseMap.set(rel.person2_id, rel.person1_id);
@@ -190,146 +184,149 @@ const FamilyTree = () => {
       }
     });
 
-    console.log("Spouse map:", spouseMap);
-    console.log("Parent-child map:", parentChildMap);
-    console.log("Child-parent map:", childParentMap);
-
     const newNodes: Node[] = [];
+    const newEdges: Edge[] = [];
     const processedMembers = new Set<string>();
 
-    // Find root members (those without parents)
+    // Find root members (those without parents) - oldest generation
     const rootMembers = familyMembers.filter(m => !childParentMap.has(m.id));
-    console.log("Root members:", rootMembers);
-
-    // If no root members found, treat the first member as root
     const startingMembers = rootMembers.length > 0 ? rootMembers : [familyMembers[0]];
 
-    let currentY = 100;
-    const nodeSpacing = 350;
-    const levelSpacing = 250;
+    // Calculate tree structure
+    const generations: Map<number, FamilyMember[]> = new Map();
+    const memberGeneration = new Map<string, number>();
 
-    // Process members level by level
-    const processLevel = (members: FamilyMember[], yPosition: number) => {
-      let currentX = 100;
-      const nextLevelMembers: FamilyMember[] = [];
-
-      members.forEach(member => {
-        if (processedMembers.has(member.id)) return;
-
-        // Add the main member
-        console.log("Adding node for member:", member.name);
-        newNodes.push({
-          id: member.id,
-          type: "familyMember",
-          position: { x: currentX, y: yPosition },
-          data: member as any,
-        });
-        processedMembers.add(member.id);
-
-        // Check for spouse
-        const spouseId = spouseMap.get(member.id);
-        if (spouseId && !processedMembers.has(spouseId)) {
-          const spouse = familyMembers.find(m => m.id === spouseId);
-          if (spouse) {
-            console.log("Adding spouse node for:", spouse.name);
-            newNodes.push({
-              id: spouse.id,
-              type: "familyMember",
-              position: { x: currentX + 250, y: yPosition },
-              data: spouse as any,
-            });
-            processedMembers.add(spouse.id);
-          }
-        }
-
-        // Find children of this member
-        const children = parentChildMap.get(member.id) || [];
-        children.forEach(childId => {
-          const child = familyMembers.find(m => m.id === childId);
-          if (child && !processedMembers.has(childId)) {
-            nextLevelMembers.push(child);
-          }
-        });
-
-        // Also check if spouse has children
-        if (spouseId) {
-          const spouseChildren = parentChildMap.get(spouseId) || [];
-          spouseChildren.forEach(childId => {
-            const child = familyMembers.find(m => m.id === childId);
-            if (child && !processedMembers.has(childId) && !nextLevelMembers.includes(child)) {
-              nextLevelMembers.push(child);
-            }
-          });
-        }
-
-        currentX += spouseId ? 600 : nodeSpacing;
-      });
-
-      // Process next level if there are children
-      if (nextLevelMembers.length > 0) {
-        processLevel(nextLevelMembers, yPosition + levelSpacing);
+    // Assign generations starting from root
+    const assignGeneration = (members: FamilyMember[], generation: number) => {
+      if (!generations.has(generation)) {
+        generations.set(generation, []);
       }
+      
+      members.forEach(member => {
+        if (!memberGeneration.has(member.id)) {
+          memberGeneration.set(member.id, generation);
+          generations.get(generation)!.push(member);
+          
+          // Find children and assign them to next generation
+          const children = parentChildMap.get(member.id) || [];
+          const childMembers = children
+            .map(childId => familyMembers.find(m => m.id === childId))
+            .filter(Boolean) as FamilyMember[];
+          
+          if (childMembers.length > 0) {
+            assignGeneration(childMembers, generation + 1);
+          }
+        }
+      });
     };
 
-    // Start processing from root members
-    processLevel(startingMembers, currentY);
+    assignGeneration(startingMembers, 0);
 
-    // Add any remaining members that weren't processed (orphaned members)
-    familyMembers.forEach((member, index) => {
-      if (!processedMembers.has(member.id)) {
-        console.log("Adding orphaned member:", member.name);
+    // Add any unprocessed members as orphaned
+    familyMembers.forEach(member => {
+      if (!memberGeneration.has(member.id)) {
+        const maxGen = Math.max(...Array.from(generations.keys()));
+        const orphanGen = maxGen + 1;
+        if (!generations.has(orphanGen)) {
+          generations.set(orphanGen, []);
+        }
+        generations.get(orphanGen)!.push(member);
+        memberGeneration.set(member.id, orphanGen);
+      }
+    });
+
+    // Layout nodes by generation
+    const nodeWidth = 220;
+    const nodeHeight = 180;
+    const horizontalSpacing = 280;
+    const verticalSpacing = 250;
+    const spouseOffset = 250;
+
+    Array.from(generations.keys()).sort().forEach(generation => {
+      const membersInGen = generations.get(generation) || [];
+      const yPosition = 100 + generation * verticalSpacing;
+      
+      // Group by spouse pairs
+      const processed = new Set<string>();
+      let xOffset = 50;
+      
+      membersInGen.forEach(member => {
+        if (processed.has(member.id)) return;
+        
+        const spouseId = spouseMap.get(member.id);
+        const spouse = spouseId ? familyMembers.find(m => m.id === spouseId) : null;
+        
+        // Position primary member
         newNodes.push({
           id: member.id,
           type: "familyMember",
-          position: { 
-            x: (index % 3) * nodeSpacing + 100, 
-            y: currentY + levelSpacing * 2
-          },
+          position: { x: xOffset, y: yPosition },
           data: member as any,
+        });
+        processed.add(member.id);
+        
+        // Position spouse next to primary member if exists
+        if (spouse && memberGeneration.get(spouse.id) === generation) {
+          newNodes.push({
+            id: spouse.id,
+            type: "familyMember", 
+            position: { x: xOffset + spouseOffset, y: yPosition },
+            data: spouse as any,
+          });
+          processed.add(spouse.id);
+          
+          // Add spouse edge
+          newEdges.push({
+            id: `spouse-${member.id}-${spouse.id}`,
+            source: member.id,
+            target: spouse.id,
+            type: "straight",
+            style: {
+              stroke: "hsl(var(--primary))",
+              strokeWidth: 3,
+            },
+            label: "♥",
+          });
+          
+          xOffset += spouseOffset + horizontalSpacing;
+        } else {
+          xOffset += horizontalSpacing;
+        }
+      });
+    });
+
+    // Add parent-child edges
+    relationships.forEach(rel => {
+      if (rel.relationship_type === 'parent') {
+        newEdges.push({
+          id: `parent-${rel.person1_id}-${rel.person2_id}`,
+          source: rel.person1_id,
+          target: rel.person2_id,
+          type: "smoothstep",
+          style: {
+            stroke: "hsl(var(--tree-connection))",
+            strokeWidth: 2,
+          },
+          animated: false,
+        });
+      } else if (rel.relationship_type === 'child') {
+        newEdges.push({
+          id: `child-${rel.person1_id}-${rel.person2_id}`,
+          source: rel.person2_id,
+          target: rel.person1_id,
+          type: "smoothstep", 
+          style: {
+            stroke: "hsl(var(--tree-connection))",
+            strokeWidth: 2,
+          },
+          animated: false,
         });
       }
     });
-
-    // Create edges for relationships
-    const newEdges: Edge[] = relationships.map((rel, index) => {
-      const baseEdge = {
-        id: rel.id || `edge-${index}`,
-        style: {
-          stroke: "hsl(var(--tree-connection))",
-          strokeWidth: 2,
-        },
-      };
-
-      if (rel.relationship_type === 'spouse') {
-        return {
-          ...baseEdge,
-          source: rel.person1_id,
-          target: rel.person2_id,
-          type: "straight",
-          label: "Spouse",
-          style: { 
-            ...baseEdge.style, 
-            stroke: "hsl(var(--primary))" 
-          },
-        };
-      }
-
-      // Parent-child relationships
-      return {
-        ...baseEdge,
-        source: rel.relationship_type === 'parent' ? rel.person1_id : rel.person2_id,
-        target: rel.relationship_type === 'parent' ? rel.person2_id : rel.person1_id,
-        type: "smoothstep",
-        label: "Child",
-      };
-    });
-
-    console.log("Created nodes:", newNodes);
-    console.log("Created edges:", newEdges);
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [familyMembers, relationships, handleEditMember, handleDeleteMember]);
+  }, [familyMembers, relationships]);
 
   useEffect(() => {
     fetchFamilyData();
@@ -350,7 +347,7 @@ const FamilyTree = () => {
     fetchFamilyData();
   };
 
-  const nodeTypes = {
+  const nodeTypes = useMemo(() => ({
     familyMember: (props: any) => (
       <FamilyMemberNode 
         {...props} 
@@ -358,7 +355,7 @@ const FamilyTree = () => {
         onDelete={handleDeleteMember}
       />
     ),
-  };
+  }), [handleEditMember, handleDeleteMember]);
 
   return (
     <div className="h-screen w-full relative">
