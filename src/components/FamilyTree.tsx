@@ -353,6 +353,8 @@ const FamilyTree = () => {
           id: `spouse-${rel.person1_id}-${rel.person2_id}`,
           source: rel.person1_id,
           target: rel.person2_id,
+          sourceHandle: "spouse-right",
+          targetHandle: "spouse-left", 
           type: "straight",
           style: {
             stroke: "hsl(var(--primary))",
@@ -362,10 +364,13 @@ const FamilyTree = () => {
           animated: false,
         });
       } else if (rel.relationship_type === 'parent') {
+        // Create edge from parent to child with source from bottom handle
         newEdges.push({
           id: `parent-${rel.person1_id}-${rel.person2_id}`,
           source: rel.person1_id,
           target: rel.person2_id,
+          sourceHandle: "bottom",
+          targetHandle: "top",
           type: "smoothstep",
           style: {
             stroke: "hsl(var(--tree-connection))",
@@ -374,10 +379,13 @@ const FamilyTree = () => {
           animated: false,
         });
       } else if (rel.relationship_type === 'child') {
+        // Create edge from parent to child with source from bottom handle
         newEdges.push({
           id: `child-${rel.person1_id}-${rel.person2_id}`,
           source: rel.person2_id,
           target: rel.person1_id,
+          sourceHandle: "bottom",
+          targetHandle: "top",
           type: "smoothstep", 
           style: {
             stroke: "hsl(var(--tree-connection))",
