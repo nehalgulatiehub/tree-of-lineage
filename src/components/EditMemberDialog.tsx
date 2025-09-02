@@ -19,6 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload, Camera } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface FamilyMember {
   id: string;
@@ -27,7 +30,9 @@ interface FamilyMember {
   date_of_birth?: string;
   date_of_death?: string;
   photo_url?: string;
+  photo_file_path?: string;
   notes?: string;
+  is_alive?: boolean;
 }
 
 interface EditMemberDialogProps {
@@ -40,6 +45,8 @@ interface EditMemberDialogProps {
 const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMemberDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -48,6 +55,7 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
     dateOfDeath: "",
     photoUrl: "",
     notes: "",
+    isAlive: true,
   });
 
   useEffect(() => {
@@ -59,9 +67,24 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
         dateOfDeath: member.date_of_death || "",
         photoUrl: member.photo_url || "",
         notes: member.notes || "",
+        isAlive: member.is_alive !== false,
       });
+      setPhotoPreview(null);
+      setSelectedPhoto(null);
     }
   }, [member]);
+
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedPhoto(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +93,39 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
     setIsLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      let photoPath = member.photo_file_path;
+      
+      // Upload new photo if selected
+      if (selectedPhoto) {
+        const fileExt = selectedPhoto.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `family-photos/${user.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('family-photos')
+          .upload(filePath, selectedPhoto);
+        
+        if (uploadError) {
+          console.warn("Photo upload failed:", uploadError);
+          toast({
+            title: "Photo upload failed",
+            description: "Member was updated but photo could not be uploaded",
+            variant: "destructive",
+          });
+        } else {
+          // Delete old photo if it exists
+          if (member.photo_file_path) {
+            await supabase.storage
+              .from('family-photos')
+              .remove([member.photo_file_path]);
+          }
+          photoPath = filePath;
+        }
+      }
+
       const { error } = await supabase
         .from("family_members")
         .update({
@@ -78,7 +134,9 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
           date_of_birth: formData.dateOfBirth || null,
           date_of_death: formData.dateOfDeath || null,
           photo_url: formData.photoUrl || null,
+          photo_file_path: photoPath,
           notes: formData.notes || null,
+          is_alive: formData.isAlive,
         })
         .eq("id", member.id);
 
@@ -103,6 +161,14 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
     }
   };
 
+  const getCurrentPhoto = () => {
+    if (photoPreview) return photoPreview;
+    if (member?.photo_file_path) {
+      return supabase.storage.from('family-photos').getPublicUrl(member.photo_file_path).data.publicUrl;
+    }
+    return formData.photoUrl || member?.photo_url;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -114,6 +180,39 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Photo Upload Section */}
+          <div className="space-y-2">
+            <Label>Profile Photo</Label>
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={getCurrentPhoto() || undefined} />
+                <AvatarFallback className="bg-muted">
+                  <Camera className="h-8 w-8 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                  id="photo-upload"
+                />
+                <label htmlFor="photo-upload">
+                  <Button type="button" variant="outline" className="cursor-pointer" asChild>
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose New Photo
+                    </span>
+                  </Button>
+                </label>
+                <div className="text-xs text-muted-foreground">
+                  Or update photo URL below
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name *</Label>
@@ -157,12 +256,32 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
                 type="date"
                 value={formData.dateOfDeath}
                 onChange={(e) => setFormData({ ...formData, dateOfDeath: e.target.value })}
+                disabled={formData.isAlive}
               />
             </div>
           </div>
 
+          {/* Living Status */}
+          <div className="flex flex-row items-center justify-between rounded-lg border p-3 space-y-0">
+            <div className="space-y-0.5">
+              <Label>Living Status</Label>
+              <div className="text-sm text-muted-foreground">
+                Is this person currently alive?
+              </div>
+            </div>
+            <Switch
+              checked={formData.isAlive}
+              onCheckedChange={(checked) => {
+                setFormData({ ...formData, isAlive: checked });
+                if (checked) {
+                  setFormData(prev => ({ ...prev, dateOfDeath: "" }));
+                }
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="photoUrl">Photo URL</Label>
+            <Label htmlFor="photoUrl">Photo URL (Optional)</Label>
             <Input
               id="photoUrl"
               type="url"
