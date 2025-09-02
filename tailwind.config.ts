@@ -60,6 +60,10 @@ export default {
 					'node-female': 'hsl(var(--tree-node-female))',
 					connection: 'hsl(var(--tree-connection))'
 				},
+				status: {
+					alive: 'hsl(var(--status-alive))',
+					deceased: 'hsl(var(--status-deceased))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
