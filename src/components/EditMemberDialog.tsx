@@ -101,8 +101,8 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
       // Upload new photo if selected
       if (selectedPhoto) {
         const fileExt = selectedPhoto.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `family-photos/${user.id}/${fileName}`;
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('family-photos')
