@@ -98,7 +98,7 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
           {/* Status indicator and Avatar */}
           <div className="flex justify-center relative">
             <Avatar className="h-16 w-16 border-2 border-background shadow-soft">
-              <AvatarImage src={data.photo_url || data.photo_file_path} alt={data.name} />
+              <AvatarImage src={data.photo_file_path ? `https://qfvprhpmykrrvuucaaak.supabase.co/storage/v1/object/public/family-photos/${data.photo_file_path}` : data.photo_url} alt={data.name} />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                 {getInitials(data.name)}
               </AvatarFallback>
