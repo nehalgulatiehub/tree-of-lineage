@@ -47,8 +47,8 @@
 
     /* Tree-specific colors - Enhanced visibility */
     --tree-node: 120 20% 95%;
-    --tree-node-male: 210 40% 88%;
-    --tree-node-female: 330 35% 88%;
+    --tree-node-male: 210 100% 75%;
+    --tree-node-female: 320 100% 75%;
     --tree-connection: 120 15% 65%;
     
     /* Status indicators */

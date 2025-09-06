@@ -280,16 +280,6 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="photoUrl">Photo URL (Optional)</Label>
-            <Input
-              id="photoUrl"
-              type="url"
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="https://example.com/photo.jpg"
-            />
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>

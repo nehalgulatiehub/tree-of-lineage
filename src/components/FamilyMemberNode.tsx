@@ -34,9 +34,9 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
   const getGenderColor = (gender?: string) => {
     switch (gender) {
       case "male":
-        return "bg-tree-node-male border-blue-300";
+        return "bg-tree-node-male border-blue-500 border-2";
       case "female":
-        return "bg-tree-node-female border-pink-300";
+        return "bg-tree-node-female border-pink-500 border-2";
       default:
         return "bg-tree-node border-border";
     }

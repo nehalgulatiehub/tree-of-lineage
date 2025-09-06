@@ -322,16 +322,6 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="photoUrl">Photo URL (Optional)</Label>
-            <Input
-              id="photoUrl"
-              type="url"
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="https://example.com/photo.jpg"
-            />
-          </div>
 
           {existingMembers.length > 0 && (
             <div className="border-t pt-4">
