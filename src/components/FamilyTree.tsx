@@ -152,7 +152,7 @@ const FamilyTree = () => {
     }
   };
 
-  // Simple top-to-bottom family tree layout
+  // Top-to-bottom family tree layout with proper spouse and parent-child connections
   const createNodesAndEdges = useCallback(() => {
     if (familyMembers.length === 0) {
       setNodes([]);
@@ -167,100 +167,120 @@ const FamilyTree = () => {
     const spouseRelationships = relationships.filter(r => r.relationship_type === 'spouse');
     const parentRelationships = relationships.filter(r => r.relationship_type === 'parent');
     
-    // Build family structure
     const processedMembers = new Set<string>();
-    const generations: Array<FamilyMember[]> = [[], [], []]; // Support 3 generations
     
     // Find root generation (members without parents)
     const childrenIds = new Set(parentRelationships.map(r => r.person2_id));
     const rootMembers = familyMembers.filter(m => !childrenIds.has(m.id));
     
-    // Place root members in first generation
-    let currentX = 100;
-    rootMembers.forEach((member, index) => {
-      // Check if this member has a spouse
-      const spouseRel = spouseRelationships.find(r => r.person1_id === member.id || r.person2_id === member.id);
-      let spouse = null;
+    // Build generations
+    const generations: Map<number, Set<string>> = new Map();
+    const memberToGeneration: Map<string, number> = new Map();
+    
+    // Assign generation levels
+    const assignGeneration = (memberId: string, generation: number) => {
+      if (memberToGeneration.has(memberId)) return;
       
-      if (spouseRel) {
-        const spouseId = spouseRel.person1_id === member.id ? spouseRel.person2_id : spouseRel.person1_id;
-        spouse = familyMembers.find(m => m.id === spouseId);
+      memberToGeneration.set(memberId, generation);
+      if (!generations.has(generation)) {
+        generations.set(generation, new Set());
       }
+      generations.get(generation)!.add(memberId);
       
-      if (spouse && !processedMembers.has(spouse.id)) {
-        // Place couple side by side
-        newNodes.push({
-          id: member.id,
-          type: 'familyMember',
-          position: { x: currentX, y: 100 },
-          data: member as any,
-          draggable: true,
-        });
+      // Find children and assign them to next generation
+      const children = parentRelationships
+        .filter(r => r.person1_id === memberId)
+        .map(r => r.person2_id);
+      
+      children.forEach(childId => {
+        assignGeneration(childId, generation + 1);
+      });
+    };
+    
+    // Start with root members at generation 0
+    rootMembers.forEach(member => assignGeneration(member.id, 0));
+    
+    // Position nodes generation by generation
+    let currentY = 50;
+    const generationSpacing = 300;
+    
+    Array.from(generations.keys()).sort().forEach(gen => {
+      const membersInGen = Array.from(generations.get(gen)!);
+      let currentX = 100;
+      const nodeSpacing = 350;
+      
+      membersInGen.forEach(memberId => {
+        if (processedMembers.has(memberId)) return;
         
-        newNodes.push({
-          id: spouse.id,
-          type: 'familyMember',
-          position: { x: currentX + 320, y: 100 },
-          data: spouse as any,
-          draggable: true,
-        });
+        const member = familyMembers.find(m => m.id === memberId);
+        if (!member) return;
         
-        // Add single spouse line
-        newEdges.push({
-          id: `spouse-${member.id}-${spouse.id}`,
-          source: member.id,
-          target: spouse.id,
-          sourceHandle: 'spouse-right',
-          targetHandle: 'spouse-left',
-          type: 'straight',
-          style: { stroke: 'hsl(var(--primary))', strokeWidth: 3 },
-        });
+        // Check if this member has a spouse
+        const spouseRel = spouseRelationships.find(r => 
+          (r.person1_id === memberId || r.person2_id === memberId) && 
+          !processedMembers.has(r.person1_id === memberId ? r.person2_id : r.person1_id)
+        );
         
-        processedMembers.add(member.id);
-        processedMembers.add(spouse.id);
-        
-        // Find their children
-        const childrenOfCouple = parentRelationships
-          .filter(r => r.person1_id === member.id || r.person1_id === spouse.id)
-          .map(r => r.person2_id);
-        
-        // Remove duplicates
-        const uniqueChildren = [...new Set(childrenOfCouple)];
-        
-        // Position children below parents
-        uniqueChildren.forEach((childId, childIndex) => {
-          const child = familyMembers.find(m => m.id === childId);
-          if (child && !processedMembers.has(childId)) {
-            const childX = currentX + 160 + (childIndex - (uniqueChildren.length - 1) / 2) * 300;
-            
+        if (spouseRel) {
+          const spouseId = spouseRel.person1_id === memberId ? spouseRel.person2_id : spouseRel.person1_id;
+          const spouse = familyMembers.find(m => m.id === spouseId);
+          
+          if (spouse) {
+            // Place couple side by side
             newNodes.push({
-              id: child.id,
+              id: member.id,
               type: 'familyMember',
-              position: { x: childX, y: 400 },
-              data: child as any,
+              position: { x: currentX, y: currentY },
+              data: member as any,
               draggable: true,
             });
             
-            processedMembers.add(childId);
+            newNodes.push({
+              id: spouse.id,
+              type: 'familyMember',
+              position: { x: currentX + 280, y: currentY },
+              data: spouse as any,
+              draggable: true,
+            });
             
-            // Single line from center of parents to child
-            const centerX = currentX + 160;
-            const connectionId = `connection-${member.id}-${spouse.id}`;
+            // Single horizontal line between spouses
+            newEdges.push({
+              id: `spouse-${member.id}-${spouse.id}`,
+              source: member.id,
+              target: spouse.id,
+              sourceHandle: 'right',
+              targetHandle: 'left',
+              type: 'straight',
+              style: { stroke: 'hsl(var(--primary))', strokeWidth: 3 },
+            });
             
-            // Only create connection point once per couple
-            if (!newNodes.find(n => n.id === connectionId)) {
+            processedMembers.add(member.id);
+            processedMembers.add(spouse.id);
+            
+            // Handle children connections
+            const childrenOfCouple = parentRelationships
+              .filter(r => r.person1_id === member.id || r.person1_id === spouse.id)
+              .map(r => r.person2_id);
+            
+            const uniqueChildren = [...new Set(childrenOfCouple)];
+            
+            if (uniqueChildren.length > 0) {
+              // Create connection point between parents
+              const connectionId = `family-connection-${member.id}-${spouse.id}`;
+              const centerX = currentX + 140; // Center between spouses
+              
               newNodes.push({
                 id: connectionId,
                 type: 'default',
-                position: { x: centerX, y: 250 },
+                position: { x: centerX, y: currentY + 100 },
                 data: { label: '' },
                 style: { opacity: 0, width: 1, height: 1 },
                 draggable: false,
               });
               
-              // Lines from parents to connection point
+              // Vertical line from spouse connection to family connection point
               newEdges.push({
-                id: `parent-to-center-${member.id}`,
+                id: `family-line-${member.id}-${spouse.id}`,
                 source: member.id,
                 target: connectionId,
                 sourceHandle: 'bottom',
@@ -268,55 +288,72 @@ const FamilyTree = () => {
                 style: { stroke: 'hsl(var(--tree-connection))', strokeWidth: 2 },
               });
               
-              newEdges.push({
-                id: `parent-to-center-${spouse.id}`,
-                source: spouse.id,
-                target: connectionId,
-                sourceHandle: 'bottom',
-                type: 'straight',
-                style: { stroke: 'hsl(var(--tree-connection))', strokeWidth: 2 },
+              // Connect each child to the family connection point
+              uniqueChildren.forEach(childId => {
+                const child = familyMembers.find(m => m.id === childId);
+                if (child) {
+                  newEdges.push({
+                    id: `parent-child-${connectionId}-${childId}`,
+                    source: connectionId,
+                    target: childId,
+                    targetHandle: 'top',
+                    type: 'straight',
+                    style: { stroke: 'hsl(var(--tree-connection))', strokeWidth: 2 },
+                  });
+                }
               });
             }
             
-            // Line from connection point to child
+            currentX += 420; // Space for couple + gap
+          }
+        } else {
+          // Single member
+          newNodes.push({
+            id: member.id,
+            type: 'familyMember',
+            position: { x: currentX, y: currentY },
+            data: member as any,
+            draggable: true,
+          });
+          
+          processedMembers.add(member.id);
+          
+          // Handle single parent children
+          const children = parentRelationships
+            .filter(r => r.person1_id === member.id)
+            .map(r => r.person2_id);
+          
+          children.forEach(childId => {
             newEdges.push({
-              id: `child-line-${childId}`,
-              source: connectionId,
+              id: `single-parent-${member.id}-${childId}`,
+              source: member.id,
               target: childId,
+              sourceHandle: 'bottom',
               targetHandle: 'top',
               type: 'straight',
               style: { stroke: 'hsl(var(--tree-connection))', strokeWidth: 2 },
             });
-          }
-        });
-        
-        currentX += Math.max(640, uniqueChildren.length * 300 + 320);
-      } else if (!processedMembers.has(member.id)) {
-        // Single member
-        newNodes.push({
-          id: member.id,
-          type: 'familyMember',
-          position: { x: currentX, y: 100 },
-          data: member as any,
-          draggable: true,
-        });
-        
-        processedMembers.add(member.id);
-        currentX += 350;
-      }
+          });
+          
+          currentX += nodeSpacing;
+        }
+      });
+      
+      currentY += generationSpacing;
     });
     
-    // Add any remaining members that weren't processed
+    // Add any remaining unprocessed members
+    let remainingX = 100;
     familyMembers.forEach((member) => {
       if (!processedMembers.has(member.id)) {
         newNodes.push({
           id: member.id,
           type: 'familyMember',
-          position: { x: currentX, y: 100 },
+          position: { x: remainingX, y: 50 },
           data: member as any,
           draggable: true,
         });
-        currentX += 350;
+        remainingX += 350;
       }
     });
 
