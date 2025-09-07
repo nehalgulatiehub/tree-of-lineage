@@ -19,9 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Camera } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 
 interface FamilyMember {
   id: string;
@@ -30,9 +27,7 @@ interface FamilyMember {
   date_of_birth?: string;
   date_of_death?: string;
   photo_url?: string;
-  photo_file_path?: string;
   notes?: string;
-  is_alive?: boolean;
 }
 
 interface AddMemberDialogProps {
@@ -45,8 +40,6 @@ interface AddMemberDialogProps {
 const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddMemberDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -55,22 +48,9 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
     dateOfDeath: "",
     photoUrl: "",
     notes: "",
-    isAlive: true,
     relatedTo: "",
     relationshipType: "",
   });
-
-  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedPhoto(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,30 +63,6 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         throw new Error("User not authenticated");
       }
 
-      let photoPath = null;
-      
-      // Upload photo if selected
-      if (selectedPhoto) {
-        const fileExt = selectedPhoto.name.split('.').pop();
-        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('family-photos')
-          .upload(filePath, selectedPhoto);
-        
-        if (uploadError) {
-          console.warn("Photo upload failed:", uploadError);
-          toast({
-            title: "Photo upload failed",
-            description: "Member was added but photo could not be uploaded",
-            variant: "destructive",
-          });
-        } else {
-          photoPath = filePath;
-        }
-      }
-
       // Insert family member
       const { data: member, error: memberError } = await supabase
         .from("family_members")
@@ -117,9 +73,7 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
           date_of_birth: formData.dateOfBirth || null,
           date_of_death: formData.dateOfDeath || null,
           photo_url: formData.photoUrl || null,
-          photo_file_path: photoPath,
           notes: formData.notes || null,
-          is_alive: formData.isAlive,
         })
         .select()
         .single();
@@ -190,12 +144,9 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         dateOfDeath: "",
         photoUrl: "",
         notes: "",
-        isAlive: true,
         relatedTo: "",
         relationshipType: "",
       });
-      setSelectedPhoto(null);
-      setPhotoPreview(null);
 
       onMemberAdded();
     } catch (error) {
@@ -222,39 +173,6 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Photo Upload Section */}
-          <div className="space-y-2">
-            <Label>Profile Photo</Label>
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={photoPreview || formData.photoUrl || undefined} />
-                <AvatarFallback className="bg-muted">
-                  <Camera className="h-8 w-8 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoSelect}
-                  className="hidden"
-                  id="photo-upload"
-                />
-                <label htmlFor="photo-upload">
-                  <Button type="button" variant="outline" className="cursor-pointer" asChild>
-                    <span>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Photo
-                    </span>
-                  </Button>
-                </label>
-                <div className="text-xs text-muted-foreground">
-                  Or enter photo URL below
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name *</Label>
@@ -298,30 +216,20 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
                 type="date"
                 value={formData.dateOfDeath}
                 onChange={(e) => setFormData({ ...formData, dateOfDeath: e.target.value })}
-                disabled={formData.isAlive}
               />
             </div>
           </div>
 
-          {/* Living Status */}
-          <div className="flex flex-row items-center justify-between rounded-lg border p-3 space-y-0">
-            <div className="space-y-0.5">
-              <Label>Living Status</Label>
-              <div className="text-sm text-muted-foreground">
-                Is this person currently alive?
-              </div>
-            </div>
-            <Switch
-              checked={formData.isAlive}
-              onCheckedChange={(checked) => {
-                setFormData({ ...formData, isAlive: checked });
-                if (checked) {
-                  setFormData(prev => ({ ...prev, dateOfDeath: "" }));
-                }
-              }}
+          <div className="space-y-2">
+            <Label htmlFor="photoUrl">Photo URL</Label>
+            <Input
+              id="photoUrl"
+              type="url"
+              value={formData.photoUrl}
+              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
+              placeholder="https://example.com/photo.jpg"
             />
           </div>
-
 
           {existingMembers.length > 0 && (
             <div className="border-t pt-4">

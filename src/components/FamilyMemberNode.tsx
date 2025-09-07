@@ -19,9 +19,7 @@ interface FamilyMemberData {
   date_of_birth?: string;
   date_of_death?: string;
   photo_url?: string;
-  photo_file_path?: string;
   notes?: string;
-  is_alive?: boolean;
 }
 
 interface FamilyMemberNodeProps {
@@ -34,9 +32,9 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
   const getGenderColor = (gender?: string) => {
     switch (gender) {
       case "male":
-        return "bg-tree-node-male border-blue-500 border-2";
+        return "bg-tree-node-male border-blue-200";
       case "female":
-        return "bg-tree-node-female border-pink-500 border-2";
+        return "bg-tree-node-female border-pink-200";
       default:
         return "bg-tree-node border-border";
     }
@@ -66,10 +64,9 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
         type="target" 
         position={Position.Top} 
         className="!bg-tree-connection !border-tree-connection"
-        id="top"
       />
       
-      <Card className={`min-w-[280px] max-w-[280px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
+      <Card className={`min-w-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
         <CardContent className="p-4 text-center space-y-3">
           {/* Action Menu */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -95,18 +92,13 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
             </DropdownMenu>
           </div>
 
-          {/* Status indicator and Avatar */}
-          <div className="flex justify-center relative">
+          <div className="flex justify-center">
             <Avatar className="h-16 w-16 border-2 border-background shadow-soft">
-              <AvatarImage src={data.photo_file_path ? `https://qfvprhpmykrrvuucaaak.supabase.co/storage/v1/object/public/family-photos/${data.photo_file_path}` : data.photo_url} alt={data.name} />
+              <AvatarImage src={data.photo_url} alt={data.name} />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                 {getInitials(data.name)}
               </AvatarFallback>
             </Avatar>
-            {/* Status dot */}
-            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
-              data.is_alive !== false ? 'bg-status-alive' : 'bg-status-deceased'
-            }`}></div>
           </div>
           
           <div className="space-y-1">
@@ -147,7 +139,6 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
         type="source" 
         position={Position.Bottom} 
         className="!bg-tree-connection !border-tree-connection"
-        id="bottom"
       />
       
       {/* Side handles for spouse connections */}

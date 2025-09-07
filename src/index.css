@@ -45,15 +45,11 @@
     --input: 120 10% 88%;
     --ring: 120 25% 35%;
 
-    /* Tree-specific colors - Enhanced visibility */
+    /* Tree-specific colors */
     --tree-node: 120 20% 95%;
-    --tree-node-male: 210 100% 75%;
-    --tree-node-female: 320 100% 75%;
+    --tree-node-male: 200 25% 92%;
+    --tree-node-female: 320 25% 92%;
     --tree-connection: 120 15% 65%;
-    
-    /* Status indicators */
-    --status-alive: 120 60% 45%;
-    --status-deceased: 0 65% 50%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(120 25% 35%), hsl(120 20% 45%));
