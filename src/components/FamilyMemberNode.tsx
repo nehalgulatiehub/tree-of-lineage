@@ -94,7 +94,17 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
 
           <div className="flex justify-center">
             <Avatar className="h-16 w-16 border-2 border-background shadow-soft">
-              <AvatarImage src={data.photo_url} alt={data.name} />
+              <AvatarImage 
+                src={data.photo_url || undefined} 
+                alt={data.name}
+                onError={(e) => {
+                  console.log("Image failed to load:", data.photo_url);
+                  e.currentTarget.style.display = 'none';
+                }}
+                onLoad={() => {
+                  console.log("Image loaded successfully:", data.photo_url);
+                }}
+              />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                 {getInitials(data.name)}
               </AvatarFallback>
