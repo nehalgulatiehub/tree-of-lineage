@@ -46,9 +46,11 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
     gender: "",
     dateOfBirth: "",
     dateOfDeath: "",
-    photoUrl: "",
     notes: "",
   });
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (member) {
@@ -57,11 +59,45 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
         gender: member.gender || "",
         dateOfBirth: member.date_of_birth || "",
         dateOfDeath: member.date_of_death || "",
-        photoUrl: member.photo_url || "",
         notes: member.notes || "",
       });
+      setPhotoPreview(member.photo_url || null);
     }
   }, [member]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadPhoto = async (file: File, memberId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${memberId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('family-photos')
+      .upload(filePath, file, {
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('family-photos')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +106,18 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
     setIsLoading(true);
 
     try {
+      let photoUrl = member.photo_url;
+
+      // Upload new photo if provided
+      if (photoFile) {
+        try {
+          photoUrl = await uploadPhoto(photoFile, member.id);
+        } catch (photoError) {
+          console.error("Error uploading photo:", photoError);
+          // Don't throw here, continue with update
+        }
+      }
+
       const { error } = await supabase
         .from("family_members")
         .update({
@@ -77,7 +125,7 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
           gender: formData.gender || null,
           date_of_birth: formData.dateOfBirth || null,
           date_of_death: formData.dateOfDeath || null,
-          photo_url: formData.photoUrl || null,
+          photo_url: photoUrl,
           notes: formData.notes || null,
         })
         .eq("id", member.id);
@@ -162,14 +210,22 @@ const EditMemberDialog = ({ open, onClose, onMemberUpdated, member }: EditMember
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="photoUrl">Photo URL</Label>
+            <Label htmlFor="photo">Photo</Label>
             <Input
-              id="photoUrl"
-              type="url"
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="https://example.com/photo.jpg"
+              id="photo"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
             />
+            {photoPreview && (
+              <div className="mt-2">
+                <img 
+                  src={photoPreview} 
+                  alt="Preview" 
+                  className="w-20 h-20 object-cover rounded-lg border"
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

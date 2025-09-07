@@ -46,11 +46,47 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
     gender: "",
     dateOfBirth: "",
     dateOfDeath: "",
-    photoUrl: "",
     notes: "",
     relatedTo: "",
     relationshipType: "",
   });
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadPhoto = async (file: File, memberId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${memberId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('family-photos')
+      .upload(filePath, file, {
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('family-photos')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +99,7 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         throw new Error("User not authenticated");
       }
 
-      // Insert family member
+      // Insert family member first
       const { data: member, error: memberError } = await supabase
         .from("family_members")
         .insert({
@@ -72,11 +108,36 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
           gender: formData.gender || null,
           date_of_birth: formData.dateOfBirth || null,
           date_of_death: formData.dateOfDeath || null,
-          photo_url: formData.photoUrl || null,
           notes: formData.notes || null,
         })
         .select()
         .single();
+
+      if (memberError) {
+        console.error("Member insert error:", memberError);
+        throw memberError;
+      }
+
+      // Upload photo if provided
+      let photoUrl = null;
+      if (photoFile && member) {
+        try {
+          photoUrl = await uploadPhoto(photoFile, member.id);
+          
+          // Update member with photo URL
+          const { error: updateError } = await supabase
+            .from("family_members")
+            .update({ photo_url: photoUrl })
+            .eq("id", member.id);
+
+          if (updateError) {
+            console.error("Error updating photo URL:", updateError);
+          }
+        } catch (photoError) {
+          console.error("Error uploading photo:", photoError);
+          // Don't throw here, member was created successfully
+        }
+      }
 
       if (memberError) {
         console.error("Member insert error:", memberError);
@@ -142,11 +203,12 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
         gender: "",
         dateOfBirth: "",
         dateOfDeath: "",
-        photoUrl: "",
         notes: "",
         relatedTo: "",
         relationshipType: "",
       });
+      setPhotoFile(null);
+      setPhotoPreview(null);
 
       onMemberAdded();
     } catch (error) {
@@ -221,14 +283,22 @@ const AddMemberDialog = ({ open, onClose, onMemberAdded, existingMembers }: AddM
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="photoUrl">Photo URL</Label>
+            <Label htmlFor="photo">Photo</Label>
             <Input
-              id="photoUrl"
-              type="url"
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              placeholder="https://example.com/photo.jpg"
+              id="photo"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
             />
+            {photoPreview && (
+              <div className="mt-2">
+                <img 
+                  src={photoPreview} 
+                  alt="Preview" 
+                  className="w-20 h-20 object-cover rounded-lg border"
+                />
+              </div>
+            )}
           </div>
 
           {existingMembers.length > 0 && (
