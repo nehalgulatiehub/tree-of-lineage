@@ -32,11 +32,11 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
   const getGenderColor = (gender?: string) => {
     switch (gender) {
       case "male":
-        return "bg-tree-node-male border-blue-200";
+        return "bg-blue-900 border-blue-700 text-white";
       case "female":
-        return "bg-tree-node-female border-pink-200";
+        return "bg-pink-900 border-pink-700 text-white";
       default:
-        return "bg-tree-node border-border";
+        return "bg-gray-900 border-gray-700 text-white";
     }
   };
 
@@ -68,6 +68,11 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
       
       <Card className={`min-w-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
         <CardContent className="p-4 text-center space-y-3">
+          {/* Status dot */}
+          <div className="absolute top-2 left-2">
+            <div className={`w-3 h-3 rounded-full ${data.date_of_death ? 'bg-red-500' : 'bg-green-500'}`} />
+          </div>
+          
           {/* Action Menu */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
@@ -112,16 +117,16 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
           </div>
           
           <div className="space-y-1">
-            <h3 className="font-semibold text-lg text-foreground">{data.name}</h3>
+            <h3 className="font-semibold text-lg">{data.name}</h3>
             
             {data.gender && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
                 {data.gender.charAt(0).toUpperCase() + data.gender.slice(1)}
               </Badge>
             )}
           </div>
           
-          <div className="space-y-1 text-sm text-muted-foreground">
+          <div className="space-y-1 text-sm text-white/80">
             {data.date_of_birth && (
               <div className="flex items-center justify-center space-x-1">
                 <Calendar className="h-3 w-3" />
@@ -138,7 +143,7 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
           </div>
           
           {data.notes && (
-            <p className="text-xs text-muted-foreground italic line-clamp-2">
+            <p className="text-xs text-white/70 italic line-clamp-2">
               {data.notes}
             </p>
           )}
