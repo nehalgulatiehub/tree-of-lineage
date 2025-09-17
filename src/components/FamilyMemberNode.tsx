@@ -32,11 +32,11 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
   const getGenderColor = (gender?: string) => {
     switch (gender) {
       case "male":
-        return "bg-blue-900 border-blue-700 text-white";
+        return "bg-blue-600 border-blue-500 text-white";
       case "female":
-        return "bg-pink-900 border-pink-700 text-white";
+        return "bg-pink-600 border-pink-500 text-white";
       default:
-        return "bg-gray-900 border-gray-700 text-white";
+        return "bg-gray-700 border-gray-600 text-white";
     }
   };
 
@@ -66,7 +66,7 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
         className="!bg-tree-connection !border-tree-connection"
       />
       
-      <Card className={`min-w-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
+      <Card className={`w-[280px] h-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
         <CardContent className="p-4 text-center space-y-3">
           {/* Status dot */}
           <div className="absolute top-2 left-2">
