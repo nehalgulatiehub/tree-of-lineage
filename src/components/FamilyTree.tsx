@@ -270,11 +270,11 @@ const FamilyTree = () => {
     });
 
     // Layout nodes by generation with proper spouse grouping
-    const nodeWidth = 220;
-    const nodeHeight = 180;
-    const horizontalSpacing = 300;
-    const verticalSpacing = 250;
-    const spouseOffset = 250;
+    const nodeWidth = 280;
+    const nodeHeight = 220;
+    const horizontalSpacing = 400;
+    const verticalSpacing = 300;
+    const spouseOffset = 320;
 
     Array.from(generations.keys()).sort().forEach(generation => {
       const membersInGen = generations.get(generation) || [];
@@ -346,7 +346,7 @@ const FamilyTree = () => {
       });
     });
 
-    // Add relationship edges
+    // Add relationship edges with straight-line structure
     relationships.forEach(rel => {
       if (rel.relationship_type === 'spouse') {
         newEdges.push({
@@ -366,7 +366,7 @@ const FamilyTree = () => {
           id: `parent-${rel.person1_id}-${rel.person2_id}`,
           source: rel.person1_id,
           target: rel.person2_id,
-          type: "smoothstep",
+          type: "straight",
           style: {
             stroke: "hsl(var(--tree-connection))",
             strokeWidth: 2,
@@ -378,7 +378,7 @@ const FamilyTree = () => {
           id: `child-${rel.person1_id}-${rel.person2_id}`,
           source: rel.person2_id,
           target: rel.person1_id,
-          type: "smoothstep", 
+          type: "straight", 
           style: {
             stroke: "hsl(var(--tree-connection))",
             strokeWidth: 2,

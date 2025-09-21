@@ -66,8 +66,8 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
         className="!bg-tree-connection !border-tree-connection"
       />
       
-      <Card className={`w-[280px] h-[200px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
-        <CardContent className="p-4 text-center space-y-3">
+      <Card className={`w-[280px] h-[220px] shadow-soft hover:shadow-medium transition-all duration-200 ${getGenderColor(data.gender)} relative`}>
+        <CardContent className="p-3 text-center h-full flex flex-col justify-between">
           {/* Status dot */}
           <div className="absolute top-2 left-2">
             <div className={`w-3 h-3 rounded-full ${data.date_of_death ? 'bg-red-500' : 'bg-green-500'}`} />
@@ -97,8 +97,9 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
             </DropdownMenu>
           </div>
 
-          <div className="flex justify-center">
-            <Avatar className="h-16 w-16 border-2 border-background shadow-soft">
+          {/* Top section - Avatar and name */}
+          <div className="flex flex-col items-center space-y-2 pt-4">
+            <Avatar className="h-14 w-14 border-2 border-background shadow-soft">
               <AvatarImage 
                 src={data.photo_url || undefined} 
                 alt={data.name}
@@ -114,39 +115,42 @@ const FamilyMemberNode = memo(({ data, onEdit, onDelete }: FamilyMemberNodeProps
                 {getInitials(data.name)}
               </AvatarFallback>
             </Avatar>
+            
+            <div className="space-y-1">
+              <h3 className="font-semibold text-base leading-tight">{data.name}</h3>
+              
+              {data.gender && (
+                <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
+                  {data.gender.charAt(0).toUpperCase() + data.gender.slice(1)}
+                </Badge>
+              )}
+            </div>
           </div>
           
+          {/* Bottom section - dates and notes */}
           <div className="space-y-1">
-            <h3 className="font-semibold text-lg">{data.name}</h3>
+            <div className="text-xs text-white/80 space-y-1">
+              {data.date_of_birth && (
+                <div className="flex items-center justify-center space-x-1">
+                  <Calendar className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">Born {formatDate(data.date_of_birth)}</span>
+                </div>
+              )}
+              
+              {data.date_of_death && (
+                <div className="flex items-center justify-center space-x-1">
+                  <Calendar className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">Died {formatDate(data.date_of_death)}</span>
+                </div>
+              )}
+            </div>
             
-            {data.gender && (
-              <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
-                {data.gender.charAt(0).toUpperCase() + data.gender.slice(1)}
-              </Badge>
+            {data.notes && (
+              <p className="text-xs text-white/70 italic line-clamp-2 px-2">
+                {data.notes}
+              </p>
             )}
           </div>
-          
-          <div className="space-y-1 text-sm text-white/80">
-            {data.date_of_birth && (
-              <div className="flex items-center justify-center space-x-1">
-                <Calendar className="h-3 w-3" />
-                <span>Born {formatDate(data.date_of_birth)}</span>
-              </div>
-            )}
-            
-            {data.date_of_death && (
-              <div className="flex items-center justify-center space-x-1">
-                <Calendar className="h-3 w-3" />
-                <span>Died {formatDate(data.date_of_death)}</span>
-              </div>
-            )}
-          </div>
-          
-          {data.notes && (
-            <p className="text-xs text-white/70 italic line-clamp-2">
-              {data.notes}
-            </p>
-          )}
         </CardContent>
       </Card>
       
