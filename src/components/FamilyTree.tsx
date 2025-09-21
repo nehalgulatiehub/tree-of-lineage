@@ -18,6 +18,7 @@ import "@xyflow/react/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FamilyMemberNode from "./FamilyMemberNode";
+import FamilyTreeEdge from "./FamilyTreeEdge";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import AddMemberDialog from "./AddMemberDialog";
@@ -346,60 +347,65 @@ const FamilyTree = () => {
       });
     });
 
-    // Add relationship edges with straight-line structure
+    // Create proper family tree connections
+    const processedSpousePairs = new Set<string>();
+
+    // First, create spouse connections (horizontal lines between partners)
     relationships.forEach(rel => {
       if (rel.relationship_type === 'spouse') {
-        newEdges.push({
-          id: `spouse-${rel.person1_id}-${rel.person2_id}`,
-          source: rel.person1_id,
-          target: rel.person2_id,
-          type: "straight",
-          style: {
-            stroke: "hsl(var(--primary))",
-            strokeWidth: 3,
-          },
-          label: "♥",
-          animated: false,
-        });
-      } else if (rel.relationship_type === 'parent') {
-        newEdges.push({
-          id: `parent-${rel.person1_id}-${rel.person2_id}`,
-          source: rel.person1_id,
-          target: rel.person2_id,
-          type: "straight",
-          style: {
-            stroke: "hsl(var(--tree-connection))",
-            strokeWidth: 2,
-          },
-          animated: false,
-        });
-      } else if (rel.relationship_type === 'child') {
-        newEdges.push({
-          id: `child-${rel.person1_id}-${rel.person2_id}`,
-          source: rel.person2_id,
-          target: rel.person1_id,
-          type: "straight", 
-          style: {
-            stroke: "hsl(var(--tree-connection))",
-            strokeWidth: 2,
-          },
-          animated: false,
-        });
-      } else if (rel.relationship_type === 'sibling') {
-        newEdges.push({
-          id: `sibling-${rel.person1_id}-${rel.person2_id}`,
-          source: rel.person1_id,
-          target: rel.person2_id,
-          type: "straight",
-          style: {
-            stroke: "hsl(var(--secondary))",
-            strokeWidth: 2,
-            strokeDasharray: "5,5",
-          },
-          label: "Sibling",
-          animated: false,
-        });
+        const pairKey = [rel.person1_id, rel.person2_id].sort().join('-');
+        if (!processedSpousePairs.has(pairKey)) {
+          processedSpousePairs.add(pairKey);
+          newEdges.push({
+            id: `spouse-${rel.person1_id}-${rel.person2_id}`,
+            source: rel.person1_id,
+            target: rel.person2_id,
+            type: "familyTreeEdge",
+            style: {
+              stroke: "hsl(var(--primary))",
+              strokeWidth: 3,
+            },
+            data: { type: 'spouse' },
+            animated: false,
+          });
+        }
       }
+    });
+
+    // Create parent-child connections with T-junction structure
+    const parentChildGroups = new Map<string, string[]>();
+    
+    // Group children by their parents (including both parent types)
+    relationships.forEach(rel => {
+      if (rel.relationship_type === 'parent' || rel.relationship_type === 'child') {
+        const parentId = rel.relationship_type === 'parent' ? rel.person1_id : rel.person2_id;
+        const childId = rel.relationship_type === 'parent' ? rel.person2_id : rel.person1_id;
+        
+        if (!parentChildGroups.has(parentId)) {
+          parentChildGroups.set(parentId, []);
+        }
+        if (!parentChildGroups.get(parentId)!.includes(childId)) {
+          parentChildGroups.get(parentId)!.push(childId);
+        }
+      }
+    });
+
+    // Create connections from parents to children
+    parentChildGroups.forEach((children, parentId) => {
+      children.forEach(childId => {
+        newEdges.push({
+          id: `parent-child-${parentId}-${childId}`,
+          source: parentId,
+          target: childId,
+          type: "familyTreeEdge",
+          style: {
+            stroke: "hsl(var(--tree-connection))",
+            strokeWidth: 2,
+          },
+          data: { type: 'parent-child' },
+          animated: false,
+        });
+      });
     });
 
     setNodes(newNodes);
@@ -435,6 +441,10 @@ const FamilyTree = () => {
     ),
   }), [handleEditMember, handleDeleteMember]);
 
+  const edgeTypes = useMemo(() => ({
+    familyTreeEdge: FamilyTreeEdge,
+  }), []);
+
   return (
     <div className="h-screen w-full relative">
       <div className="absolute top-4 left-4 z-10">
@@ -454,6 +464,7 @@ const FamilyTree = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         className="bg-gradient-to-br from-primary-lighter to-background"
       >
