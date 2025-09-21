@@ -349,13 +349,17 @@ const FamilyTree = () => {
 
     // Create proper family tree connections
     const processedSpousePairs = new Set<string>();
+    const spousePairs = new Map<string, string>(); // Track spouse relationships
 
-    // First, create spouse connections (horizontal lines between partners)
+    // First, create spouse connections and track pairs
     relationships.forEach(rel => {
       if (rel.relationship_type === 'spouse') {
         const pairKey = [rel.person1_id, rel.person2_id].sort().join('-');
         if (!processedSpousePairs.has(pairKey)) {
           processedSpousePairs.add(pairKey);
+          spousePairs.set(rel.person1_id, rel.person2_id);
+          spousePairs.set(rel.person2_id, rel.person1_id);
+          
           newEdges.push({
             id: `spouse-${rel.person1_id}-${rel.person2_id}`,
             source: rel.person1_id,
@@ -372,10 +376,10 @@ const FamilyTree = () => {
       }
     });
 
-    // Create parent-child connections with T-junction structure
+    // Create parent-child connections from the midpoint of spouse pairs
     const parentChildGroups = new Map<string, string[]>();
     
-    // Group children by their parents (including both parent types)
+    // Group children by their parents
     relationships.forEach(rel => {
       if (rel.relationship_type === 'parent' || rel.relationship_type === 'child') {
         const parentId = rel.relationship_type === 'parent' ? rel.person1_id : rel.person2_id;
@@ -390,21 +394,37 @@ const FamilyTree = () => {
       }
     });
 
-    // Create connections from parents to children
+    // Create connections from parent couples to children
+    const processedFamilyConnections = new Set<string>();
+    
     parentChildGroups.forEach((children, parentId) => {
+      const spouseId = spousePairs.get(parentId);
+      
       children.forEach(childId => {
-        newEdges.push({
-          id: `parent-child-${parentId}-${childId}`,
-          source: parentId,
-          target: childId,
-          type: "familyTreeEdge",
-          style: {
-            stroke: "hsl(var(--tree-connection))",
-            strokeWidth: 2,
-          },
-          data: { type: 'parent-child' },
-          animated: false,
-        });
+        // Create a unique family connection key to avoid duplicates
+        const familyKey = spouseId 
+          ? [parentId, spouseId].sort().join('-') + '-' + childId
+          : parentId + '-' + childId;
+          
+        if (!processedFamilyConnections.has(familyKey)) {
+          processedFamilyConnections.add(familyKey);
+          
+          newEdges.push({
+            id: `family-${parentId}-${childId}`,
+            source: parentId,
+            target: childId,
+            type: "familyTreeEdge",
+            style: {
+              stroke: "hsl(var(--tree-connection))",
+              strokeWidth: 2,
+            },
+            data: { 
+              type: 'parent-child',
+              spouseId: spouseId // Pass spouse info to edge component
+            },
+            animated: false,
+          });
+        }
       });
     });
 
