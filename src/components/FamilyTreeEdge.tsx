@@ -20,27 +20,36 @@ const FamilyTreeEdge = ({
   const { getNode } = useReactFlow();
 
   if (data?.type === 'parent-child') {
-    let startX = sourceX;
-    let startY = sourceY;
+    const sourceNode = getNode(source);
+    const targetNode = getNode(target);
     
-    // If there's a spouse, calculate midpoint between the couple
+    if (!sourceNode || !targetNode) return null;
+    
+    let parentCenterX = sourceNode.position.x + 140; // Center of source card
+    let parentY = sourceNode.position.y + sourceNode.height!;
+    
+    // If there's a spouse, calculate the midpoint between the couple
     if (data.spouseId) {
       const spouseNode = getNode(data.spouseId);
       if (spouseNode) {
-        // Calculate midpoint between parent and spouse
-        startX = (sourceX + spouseNode.position.x + 140) / 2; // 140 is half card width
-        startY = sourceY; // Keep same Y level as parents
+        const spouse1CenterX = sourceNode.position.x + 140;
+        const spouse2CenterX = spouseNode.position.x + 140;
+        parentCenterX = (spouse1CenterX + spouse2CenterX) / 2;
       }
     }
     
-    // Create T-junction connection from midpoint of parents to child
-    const dropY = startY + 80; // Drop down from parents
+    const childCenterX = targetNode.position.x + 140;
+    const childY = targetNode.position.y;
+    
+    // Create proper T-junction: vertical drop from parents, horizontal to child position, then vertical to child
+    const verticalDropDistance = 60;
+    const intermediateY = parentY + verticalDropDistance;
     
     const path = `
-      M ${startX} ${startY}
-      L ${startX} ${dropY}
-      L ${targetX + 140} ${dropY}
-      L ${targetX + 140} ${targetY}
+      M ${parentCenterX} ${parentY}
+      L ${parentCenterX} ${intermediateY}
+      L ${childCenterX} ${intermediateY}
+      L ${childCenterX} ${childY}
     `;
     
     return (
