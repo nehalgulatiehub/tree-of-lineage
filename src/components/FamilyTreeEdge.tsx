@@ -26,7 +26,7 @@ const FamilyTreeEdge = ({
     if (!sourceNode || !targetNode) return null;
     
     let parentCenterX = sourceNode.position.x + 140; // Center of source card
-    let parentY = sourceNode.position.y + sourceNode.height!;
+    let parentY = sourceNode.position.y + (sourceNode.measured?.height || 220);
     
     // If there's a spouse, calculate the midpoint between the couple
     if (data.spouseId) {
@@ -56,12 +56,12 @@ const FamilyTreeEdge = ({
       <path
         d={path}
         style={{
-          ...style,
           fill: 'none',
           stroke: 'hsl(var(--foreground))',
           strokeWidth: 2,
         }}
         className="react-flow__edge-path"
+        markerEnd="none"
       />
     );
   }
