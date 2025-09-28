@@ -415,7 +415,7 @@ const FamilyTree = () => {
             target: childId,
             type: "familyTreeEdge",
             style: {
-              stroke: "hsl(var(--tree-connection))",
+              stroke: "hsl(var(--foreground))",
               strokeWidth: 2,
             },
             data: { 
