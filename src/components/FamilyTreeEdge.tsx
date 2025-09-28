@@ -58,6 +58,8 @@ const FamilyTreeEdge = ({
         style={{
           ...style,
           fill: 'none',
+          stroke: 'hsl(var(--foreground))',
+          strokeWidth: 2,
         }}
         className="react-flow__edge-path"
       />
