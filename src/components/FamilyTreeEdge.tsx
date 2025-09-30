@@ -42,7 +42,7 @@ const FamilyTreeEdge = ({
     const childY = targetNode.position.y;
     
     // Create proper T-junction: vertical drop from parents, horizontal to child position, then vertical to child
-    const verticalDropDistance = 60;
+    const verticalDropDistance = 120; // Increased spacing to clear parent cards
     const intermediateY = parentY + verticalDropDistance;
     
     const path = `
