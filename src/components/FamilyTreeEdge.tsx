@@ -26,7 +26,7 @@ const FamilyTreeEdge = ({
     if (!sourceNode || !targetNode) return null;
     
     let parentCenterX = sourceNode.position.x + 140; // Center of source card
-    let parentY = sourceNode.position.y + (sourceNode.measured?.height || 220);
+    let parentY = sourceNode.position.y + (sourceNode.measured?.height || 220) / 2; // Middle of parent card
     
     // If there's a spouse, calculate the midpoint between the couple
     if (data.spouseId) {
